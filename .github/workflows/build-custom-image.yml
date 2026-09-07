@@ -1,6 +1,9 @@
 name: Build custom GHCR image
 
 on:
+  push:
+    branches:
+      - 'fix/v*-openai-images-oauth-n'
   workflow_dispatch:
     inputs:
       base_version:
@@ -27,8 +30,17 @@ jobs:
         id: image
         shell: bash
         env:
-          BASE_VERSION: ${{ inputs.base_version }}
+          MANUAL_BASE_VERSION: ${{ inputs.base_version }}
         run: |
+          BASE_VERSION="$MANUAL_BASE_VERSION"
+          if [[ -z "$BASE_VERSION" ]]; then
+            if [[ "$GITHUB_REF_NAME" =~ ^fix/v([0-9]+\.[0-9]+\.[0-9]+)-openai-images-oauth-n$ ]]; then
+              BASE_VERSION="${BASH_REMATCH[1]}"
+            else
+              echo "Cannot infer base_version from branch: $GITHUB_REF_NAME" >&2
+              exit 1
+            fi
+          fi
           if [[ ! "$BASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "Invalid base_version: $BASE_VERSION" >&2
             exit 1
@@ -40,6 +52,7 @@ jobs:
           echo "image=${image}" >> "$GITHUB_OUTPUT"
           echo "tag=${tag}" >> "$GITHUB_OUTPUT"
           echo "ref=${image}:${tag}" >> "$GITHUB_OUTPUT"
+          echo "base_version=${BASE_VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -60,7 +73,7 @@ jobs:
           push: true
           tags: ${{ steps.image.outputs.ref }}
           build-args: |
-            VERSION=${{ inputs.base_version }}
+            VERSION=${{ steps.image.outputs.base_version }}
             COMMIT=${{ github.sha }}
           cache-from: type=gha,scope=custom-image-amd64
           cache-to: type=gha,mode=max,scope=custom-image-amd64
