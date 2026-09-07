@@ -1,7 +1,7 @@
 <template>
   <div class="relative">
     <!-- Admin: Full version badge with dropdown -->
-    <template v-if="isAdmin">
+    <template v-if="isAdmin && updateActionsEnabled">
       <button
         @click="toggleDropdown"
         class="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs transition-colors"
@@ -630,9 +630,9 @@
       </transition>
     </template>
 
-    <!-- Non-admin: Simple static version text -->
-    <span v-else-if="version" class="text-xs text-gray-500 dark:text-dark-400">
-      v{{ version }}
+    <!-- Static version text when update actions are unavailable -->
+    <span v-else-if="currentVersion" class="text-xs text-gray-500 dark:text-dark-400">
+      v{{ currentVersion }}
     </span>
   </div>
 </template>
@@ -657,9 +657,17 @@ const DOCKER_IMAGE = 'weishaw/sub2api'
 
 const { t } = useI18n()
 
-const props = defineProps<{
-  version?: string
-}>()
+const props = withDefaults(
+  defineProps<{
+    version?: string
+    updateActionsEnabled?: boolean
+  }>(),
+  {
+    updateActionsEnabled: true
+  }
+)
+
+const updateActionsEnabled = computed(() => props.updateActionsEnabled)
 
 const authStore = useAuthStore()
 const appStore = useAppStore()
@@ -910,11 +918,11 @@ function handleClickOutside(event: MouseEvent) {
 }
 
 onMounted(() => {
-  if (isAdmin.value) {
+  if (isAdmin.value && updateActionsEnabled.value) {
     // Use cached version if available, otherwise fetch
     appStore.fetchVersion(false)
+    document.addEventListener('click', handleClickOutside)
   }
-  document.addEventListener('click', handleClickOutside)
 })
 
 onBeforeUnmount(() => {
