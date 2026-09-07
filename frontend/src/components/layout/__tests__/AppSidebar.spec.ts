@@ -61,6 +61,7 @@ describe('AppSidebar header styles', () => {
     expect(componentSource).toContain(':update-actions-enabled="false"')
     expect(versionBadgeSource).toContain('v-if="isAdmin && updateActionsEnabled"')
     expect(versionBadgeSource).toContain('if (isAdmin.value && updateActionsEnabled.value)')
+    expect(versionBadgeSource).toContain('appStore.fetchPublicSettings(true)')
   })
 
   it('does not clip the version badge dropdown', () => {

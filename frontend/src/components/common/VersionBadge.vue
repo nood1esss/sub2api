@@ -922,6 +922,11 @@ onMounted(() => {
     // Use cached version if available, otherwise fetch
     appStore.fetchVersion(false)
     document.addEventListener('click', handleClickOutside)
+  } else if (!currentVersion.value) {
+    // The server-rendered public config may omit the version. Refresh public
+    // settings once so the static badge can still show the current version
+    // without enabling update checks or update actions.
+    appStore.fetchPublicSettings(true)
   }
 })
 
